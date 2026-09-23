@@ -13,6 +13,13 @@ automatise de Nginx avec Terraform, Ansible et GitHub Actions.
 
 ## Architecture
 
+Le schema complet est disponible dans [docs/architecture-deploiement.md](docs/architecture-deploiement.md).
+L'image d'architecture est visible directement dans GitHub :
+
+![Architecture de deploiement](architecture%20de%20deploiement.png)
+
+GitHub rend aussi directement le diagramme Mermaid ci-dessous.
+
 ```mermaid
 flowchart LR
     DEV[Developer] --> PR[Pull Request]
