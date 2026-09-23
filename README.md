@@ -15,7 +15,8 @@ Créer les éléments suivants dans le dépôt :
 
 - le secret `AWS_ROLE_ARN`, contenant l'ARN d'un rôle AWS assumable par GitHub
 	Actions via OIDC ;
-- le secret `ANSIBLE_SSH_PRIVATE_KEY`, contenant la clé privée du key pair EC2 ;
+- le secret `ANSIBLE_SSH_PRIVATE_KEY`, contenant la clé privée OpenSSH non
+	chiffrée du key pair EC2, avec ses lignes `BEGIN` et `END` conservées ;
 - la variable `TF_KEY_NAME`, contenant le nom du key pair EC2 AWS ;
 - un environnement GitHub nommé `production`, idéalement avec une approbation
 	obligatoire avant le job `deploy`.

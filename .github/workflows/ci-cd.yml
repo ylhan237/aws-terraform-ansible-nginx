@@ -104,6 +104,22 @@ jobs:
           audience: sts.amazonaws.com
           role-session-name: github-actions-${{ github.run_id }}
 
+      - name: Prepare and validate SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "ANSIBLE_SSH_PRIVATE_KEY is missing from the production environment secrets."
+            exit 1
+          fi
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/deployment_key"
+          chmod 600 "$HOME/.ssh/deployment_key"
+          if ! ssh-keygen -y -f "$HOME/.ssh/deployment_key" > /dev/null 2>&1; then
+            echo "ANSIBLE_SSH_PRIVATE_KEY is not a valid, unencrypted private SSH key."
+            exit 1
+          fi
+
       - name: Allow SSH from this runner
         run: |
           runner_ip="$(curl --fail --silent --show-error https://api.ipify.org)"
@@ -128,14 +144,6 @@ jobs:
 
       - name: Install Ansible
         run: python3 -m pip install --user ansible-core
-
-      - name: Prepare SSH key
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}
-        run: |
-          install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/deployment_key"
-          chmod 600 "$HOME/.ssh/deployment_key"
 
       - name: Generate Ansible inventory from Terraform
         working-directory: terraform
