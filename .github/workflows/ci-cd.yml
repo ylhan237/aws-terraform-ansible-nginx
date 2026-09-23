@@ -6,6 +6,19 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to run manually"
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - destroy
+      confirm_destroy:
+        description: "Type DESTROY when action is destroy"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -62,7 +75,7 @@ jobs:
 
   deploy:
     name: Provision and deploy
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy')
     needs: validate
     runs-on: ubuntu-latest
     environment: production
@@ -182,3 +195,67 @@ jobs:
       - name: Deploy Nginx with Ansible
         working-directory: ansible
         run: ansible-playbook -i inventory/generated.yml playbooks/nginx.yml
+
+  destroy:
+    name: Destroy infrastructure
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.confirm_destroy == 'DESTROY'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_VAR_key_name: ${{ vars.TF_KEY_NAME }}
+      TF_VAR_allowed_ssh_cidr: ${{ vars.TF_ALLOWED_SSH_CIDR }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Verify destroy confirmation
+        run: |
+          if [ "${{ inputs.confirm_destroy }}" != "DESTROY" ]; then
+            echo "Destruction cancelled. Set confirm_destroy to DESTROY."
+            exit 1
+          fi
+
+      - name: Verify AWS role configuration
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "AWS_ROLE_ARN is missing from the production environment secrets."
+            exit 1
+          fi
+
+      - name: Verify Terraform variables
+        run: |
+          if [ -z "$TF_VAR_key_name" ] || [ -z "$TF_VAR_allowed_ssh_cidr" ]; then
+            echo "TF_KEY_NAME and TF_ALLOWED_SSH_CIDR must be configured as production environment variables."
+            exit 1
+          fi
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+          role-session-name: github-actions-destroy-${{ github.run_id }}
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform destroy plan
+        working-directory: terraform
+        run: terraform plan -destroy -out=destroy.tfplan
+
+      - name: Terraform destroy apply
+        working-directory: terraform
+        run: terraform apply -auto-approve destroy.tfplan

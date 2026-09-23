@@ -35,4 +35,9 @@ protégé avec le verrouillage et le chiffrement côté AWS.
 
 - Pull request : contrôles uniquement, aucune modification AWS.
 - Push sur `main` : plan, apply et déploiement Ansible.
-- Exécution manuelle : disponible depuis l'onglet **Actions**.
+- Exécution manuelle : choisir `deploy` ou `destroy` depuis l'onglet **Actions**.
+
+Pour supprimer l'infrastructure manuellement, choisir `destroy` et saisir
+exactement `DESTROY` dans le champ de confirmation. Le job utilise un plan
+Terraform de destruction avant l'application et l'environnement `production`
+peut imposer une approbation manuelle supplémentaire.
