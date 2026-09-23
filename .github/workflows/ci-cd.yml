@@ -78,11 +78,22 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      - name: Verify AWS role configuration
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "AWS_ROLE_ARN is missing. Add it as a repository or production environment secret."
+            exit 1
+          fi
+
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+          role-session-name: github-actions-${{ github.run_id }}
 
       - name: Terraform init
         working-directory: terraform
