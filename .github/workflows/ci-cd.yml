@@ -71,7 +71,6 @@ jobs:
       id-token: write
     env:
       TF_VAR_key_name: ${{ vars.TF_KEY_NAME }}
-      TF_VAR_allowed_ssh_cidr: ${{ vars.TF_ALLOWED_SSH_CIDR }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -92,8 +91,8 @@ jobs:
 
       - name: Verify Terraform variables
         run: |
-          if [ -z "$TF_VAR_key_name" ] || [ -z "$TF_VAR_allowed_ssh_cidr" ]; then
-            echo "TF_KEY_NAME and TF_ALLOWED_SSH_CIDR must be configured as production environment variables."
+          if [ -z "$TF_VAR_key_name" ]; then
+            echo "TF_KEY_NAME must be configured as a production environment variable."
             exit 1
           fi
 
@@ -104,6 +103,16 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
           role-session-name: github-actions-${{ github.run_id }}
+
+      - name: Allow SSH from this runner
+        run: |
+          runner_ip="$(curl --fail --silent --show-error https://api.ipify.org)"
+          if ! [[ "$runner_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Could not determine a valid public IPv4 address for the runner."
+            exit 1
+          fi
+          echo "TF_VAR_allowed_ssh_cidr=${runner_ip}/32" >> "$GITHUB_ENV"
+          echo "Configured SSH access for the current runner IP."
 
       - name: Terraform init
         working-directory: terraform

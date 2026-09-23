@@ -17,10 +17,12 @@ Créer les éléments suivants dans le dépôt :
 	Actions via OIDC ;
 - le secret `ANSIBLE_SSH_PRIVATE_KEY`, contenant la clé privée du key pair EC2 ;
 - la variable `TF_KEY_NAME`, contenant le nom du key pair EC2 AWS ;
-- la variable `TF_ALLOWED_SSH_CIDR`, contenant le CIDR autorisé pour SSH, par
-	exemple `203.0.113.10/32` ;
 - un environnement GitHub nommé `production`, idéalement avec une approbation
 	obligatoire avant le job `deploy`.
+
+La pipeline détecte automatiquement l'IP publique du runner GitHub et limite
+l'accès SSH à cette IP en `/32` avant le déploiement Ansible. La variable
+`TF_ALLOWED_SSH_CIDR` reste utile uniquement pour un déploiement local.
 
 Le rôle AWS doit limiter sa confiance au dépôt et à la branche `main`, et ses
 permissions doivent être limitées aux ressources Terraform nécessaires.
