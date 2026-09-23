@@ -23,6 +23,7 @@ on:
 permissions:
   contents: read
 
+# Prevent concurrent production runs from changing the same Terraform state.
 concurrency:
   group: production-deployment
   cancel-in-progress: false
@@ -38,6 +39,7 @@ jobs:
     name: Validate Terraform and Ansible
     runs-on: ubuntu-latest
     steps:
+      # Every change is checked before it can reach AWS.
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -85,6 +87,7 @@ jobs:
     env:
       TF_VAR_key_name: ${{ vars.TF_KEY_NAME }}
     steps:
+      # The deployment job is the only job allowed to request AWS OIDC tokens.
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -161,6 +164,7 @@ jobs:
       - name: Generate Ansible inventory from Terraform
         working-directory: terraform
         run: |
+          # Turn Terraform's structured output into the inventory Ansible consumes.
           python3 - <<'PY'
           import json
           import subprocess
@@ -209,6 +213,7 @@ jobs:
       TF_VAR_key_name: ${{ vars.TF_KEY_NAME }}
       TF_VAR_allowed_ssh_cidr: ${{ vars.TF_ALLOWED_SSH_CIDR }}
     steps:
+      # Destruction is manual and requires an explicit confirmation string.
       - name: Checkout
         uses: actions/checkout@v4
 

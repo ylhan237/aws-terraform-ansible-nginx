@@ -1,4 +1,5 @@
 terraform {
+  # Keep Terraform and the S3 backend features aligned across local and CI runs.
   required_version = ">= 1.10.0"
 
   required_providers {
@@ -7,6 +8,7 @@ terraform {
       version = "~> 6.0"
     }
   }
+  # The remote backend centralizes state and enables safe collaboration.
   backend "s3" {
     bucket       = "ylhan-terraform-state-2026-0001"
     key          = "ansible-lab/terraform.tfstate"
@@ -16,5 +18,6 @@ terraform {
 }
 
 provider "aws" {
+  # The region is configurable through the aws_region input variable.
   region = var.aws_region
 }

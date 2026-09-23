@@ -1,3 +1,4 @@
+# Network foundation: public subnet and internet connectivity for the lab.
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 
@@ -42,6 +43,7 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+# Security boundary for the web tier. HTTP is public; SSH must stay restricted.
 resource "aws_security_group" "web" {
   name        = "ansible-lab-web-sg"
   description = "Security group for Ansible lab"
@@ -76,6 +78,7 @@ resource "aws_security_group" "web" {
 }
 
 data "aws_ami" "ubuntu" {
+  # Select the latest official Ubuntu 22.04 AMD64 image in the target region.
   most_recent = true
 
   owners = ["099720109477"]
@@ -92,6 +95,7 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "web" {
+  # Create a small, consistently named web-server fleet for Ansible.
   for_each = toset([
     "web-01",
     "web-02",

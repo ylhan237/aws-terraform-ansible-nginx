@@ -4,16 +4,19 @@
   become: true
 
   tasks:
+    # Refresh package metadata before installing the web server.
     - name: Update apt cache
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
 
+    # Install the distribution package idempotently.
     - name: Install Nginx
       ansible.builtin.apt:
         name: nginx
         state: present
 
+    # Ensure Nginx starts now and after future instance reboots.
     - name: Ensure Nginx is running
       ansible.builtin.service:
         name: nginx
