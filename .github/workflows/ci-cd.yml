@@ -69,6 +69,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      TF_VAR_key_name: ${{ vars.TF_KEY_NAME }}
+      TF_VAR_allowed_ssh_cidr: ${{ vars.TF_ALLOWED_SSH_CIDR }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -84,6 +87,13 @@ jobs:
         run: |
           if [ -z "$AWS_ROLE_ARN" ]; then
             echo "AWS_ROLE_ARN is missing. Add it as a repository or production environment secret."
+            exit 1
+          fi
+
+      - name: Verify Terraform variables
+        run: |
+          if [ -z "$TF_VAR_key_name" ] || [ -z "$TF_VAR_allowed_ssh_cidr" ]; then
+            echo "TF_KEY_NAME and TF_ALLOWED_SSH_CIDR must be configured as production environment variables."
             exit 1
           fi
 
